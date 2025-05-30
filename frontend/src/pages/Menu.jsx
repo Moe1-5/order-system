@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axiosInstance from '../api/axiosInstance'; // Your configured Axios instance
 import {
     FiHome, FiEdit, FiTrash2, FiPlus, FiFilter, FiChevronDown, FiSearch,
-    FiMenu, FiX, FiUpload, FiCheck, FiAlertCircle, FiImage, FiLoader,
-    FiDollarSign, FiTag, FiArrowUp, FiArrowDown, FiXCircle // Added Sort Icons
+    FiMenu, FiX, FiUpload, FiCheck, FiAlertCircle, FiImage, FiLoader, FiArchive,
+    FiDollarSign, FiTag, FiArrowUp, FiArrowDown, FiXCircle, FiPlusSquare // Added Sort Icons
 } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 
@@ -183,9 +183,8 @@ const Menu = () => {
         if (fileInputRef.current) fileInputRef.current.value = "";
         setFormData(prev => ({ ...prev, itemImage: null, imageUrl: currentItem?.imageUrl && isEditModalOpen ? currentItem.imageUrl : null })); // Revert to original if editing
     };
-
-
-    const handleSubmitForm = async (e) => {
+    // Separate submit handlers for Add and Edit
+    const handleAddSubmit = async (e) => {
         e.preventDefault();
         setSubmitError('');
         setIsSubmitting(true);
@@ -198,23 +197,49 @@ const Menu = () => {
         data.append('isAvailable', formData.isAvailable);
         data.append('components', JSON.stringify(formData.components));
         data.append('extras', JSON.stringify(formData.extras));
-
-        if (formData.itemImage) { // A new file was selected
+        if (formData.itemImage) {
             data.append('itemImage', formData.itemImage);
-        } else if (isEditModalOpen && !formData.imageUrl && currentItem?.imageUrl) {
-            // Image was cleared in edit mode, and no new one was selected
+        }
+
+        try {
+            const response = await axiosInstance.post('/menu', data);
+            setMenuItems(prev => [response.data, ...prev].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))); // Add and sort
+            closeModal();
+        } catch (err) {
+            console.error("Error adding menu item:", err.response?.data || err.message, err);
+            setSubmitError(err.response?.data?.message || "Failed to add item.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        setSubmitError('');
+        setIsSubmitting(true);
+
+        const data = new FormData();
+        // Don't append _id to FormData for PUT request body, include in URL
+        data.append('name', formData.name);
+        data.append('price', formData.price);
+        data.append('category', formData.category);
+        data.append('description', formData.description);
+        data.append('isAvailable', formData.isAvailable);
+        data.append('components', JSON.stringify(formData.components));
+        data.append('extras', JSON.stringify(formData.extras));
+
+        if (formData.itemImage) { // A new file was selected for upload
+            data.append('itemImage', formData.itemImage);
+        } else if (!formData.imageUrl && currentItem?.imageUrl) {
+            // Image was cleared in edit mode, and no new one was selected, tell backend to remove
             data.append('removeImage', 'true');
         }
-        // If formData.imageUrl is the original URL (not blob) and itemImage is null, no 'itemImage' or 'removeImage' is sent, backend keeps old image.
+        // If formData.imageUrl is the original URL (not blob) and itemImage is null, no 'itemImage' or 'removeImage' is sent, backend keeps the old image.
 
         try {
             let response;
             if (isEditModalOpen && formData._id) {
                 response = await axiosInstance.put(`/menu/${formData._id}`, data);
                 setMenuItems(prev => prev.map(item => item._id === formData._id ? response.data : item));
-            } else {
-                response = await axiosInstance.post('/menu', data);
-                setMenuItems(prev => [response.data, ...prev].sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))); // Add and sort
             }
             closeModal();
         } catch (err) {
@@ -225,7 +250,6 @@ const Menu = () => {
         }
     };
 
-    // Correct definition for handleDeleteConfirm
     const handleDeleteConfirm = (itemId) => {
         setItemToDelete(itemId);
         setShowDeleteConfirm(true);
@@ -520,6 +544,7 @@ const Menu = () => {
                             <motion.div className="bg-white rounded-lg p-6 w-full max-w-lg relative shadow-xl max-h-[90vh] overflow-y-auto" variants={modalVariants} initial="hidden" animate="visible" exit="exit" onClick={(e) => e.stopPropagation()}>
                                 <button onClick={closeModal} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" aria-label="Close modal"> <FiX className="h-5 w-5" /> </button>
                                 <h3 className="text-xl font-semibold text-gray-900 mb-6"> {isEditModalOpen ? 'Edit Menu Item' : 'Add New Menu Item'} </h3>
+                                {/* Conditional onSubmit handler based on isEditModalOpen */}
                                 <form onSubmit={isEditModalOpen ? handleEditSubmit : handleAddSubmit} className="space-y-5">
                                     {/* Item Name, Price, Category, Description remain the same */}
                                     <div> <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Item Name <span className="text-red-500">*</span></label> <input type="text" id="name" name="name" required value={formData.name} onChange={handleInputChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" /> </div>

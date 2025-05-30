@@ -130,7 +130,6 @@ export const updateOrderStatus = async (req, res) => {
     }
 };
 
-
 export const placeCustomerOrder = async (req, res) => {
     console.log(`[${new Date().toISOString()}] RECEIVED POST /api/public/orders - Body:`, JSON.stringify(req.body));
     try {
@@ -165,48 +164,105 @@ export const placeCustomerOrder = async (req, res) => {
                 // Schema validation should catch this, but good to have an early exit
                 return res.status(400).json({ message: 'Name and Phone number are required for pickup/delivery orders.' });
             }
-            // Future: Check for address if implementing delivery type selection
-            if (!/^\+?[0-9\s\-()]{7,}$/.test(customerPhone)) {
+            // Basic phone number format validation (can be more robust)
+            if (!/^\+?[0-9\s\-()]{7,}$/.test(customerPhone.trim())) {
                 return res.status(400).json({ message: 'Please provide a valid Phone Number.' });
             }
         }
+        // Basic email format validation if provided
+        if (customerEmail && customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+            return res.status(400).json({ message: 'Please provide a valid Email address or leave it empty.' });
+        }
+
 
         // --- Validate Items & Calculate Total ---
         let calculatedTotal = 0;
         const validatedItems = [];
+
         for (const item of items) {
+            // Basic item structure validation
             if (!item.menuItemId || !mongoose.Types.ObjectId.isValid(item.menuItemId) || !item.quantity || item.quantity <= 0) {
                 return res.status(400).json({ message: `Invalid data for an item in the order.` });
             }
+
+            // Fetch menu item from DB
             const menuItem = await MenuItem.findOne({ _id: item.menuItemId, restaurant: restaurantId, isAvailable: true });
             if (!menuItem) {
-                // Try to get name from request for better error message
-                const requestedItemName = items.find(i => i.menuItemId === item.menuItemId)?.name || item.menuItemId;
+                const requestedItemName = item.name || item.menuItemId; // Use name from request if available for error msg
                 return res.status(400).json({ message: `Item "${requestedItemName}" is currently unavailable or does not exist.` });
             }
+
+            // --- Validate and Process Customizations ---
+            const validatedComponents = Array.isArray(item.selectedComponents)
+                ? item.selectedComponents.filter(comp => typeof comp === 'string' && comp.trim() !== '').map(comp => comp.trim())
+                : [];
+
+            const validatedExtras = [];
+            let extrasTotal = 0;
+
+            if (Array.isArray(item.selectedExtras)) {
+                for (const extra of item.selectedExtras) {
+                    // Validate extra structure
+                    if (!extra || typeof extra.name !== 'string' || extra.name.trim() === '' || typeof extra.price !== 'number' || extra.price < 0) {
+                        return res.status(400).json({ message: `Invalid format for an extra in item "${menuItem.name}".` });
+                    }
+
+                    // Find the corresponding extra in the menu item's extras list
+                    const menuExtra = menuItem.extras.find(me => me.name === extra.name.trim());
+
+                    // Validate extra existence against backend data
+                    if (!menuExtra) {
+                        return res.status(400).json({ message: `Invalid extra "${extra.name}" for item "${menuItem.name}".` });
+                    }
+
+                    // *** Price validation: Ensure the frontend price matches the backend price ***
+                    if (extra.price !== menuExtra.price) {
+                        console.warn(`Price mismatch for extra "${extra.name}" on item "${menuItem.name}". Frontend sent ${extra.price}, Backend has ${menuExtra.price}.`);
+                        // For security and consistency, we will use the backend price and log a warning.
+                        validatedExtras.push({ name: menuExtra.name, price: menuExtra.price });
+                        extrasTotal += menuExtra.price;
+                    } else {
+                        validatedExtras.push({ name: extra.name.trim(), price: extra.price });
+                        extrasTotal += extra.price;
+                    }
+                }
+            }
+            // --- End Customizations Processing ---
+
+            // Calculate item total including base price and extras
+            const itemTotalWithExtras = (menuItem.price + extrasTotal) * item.quantity;
+
             validatedItems.push({
-                menuItem: menuItem._id, name: menuItem.name, price: menuItem.price, quantity: item.quantity,
+                menuItem: menuItem._id,
+                name: menuItem.name, // Use name from DB
+                price: menuItem.price, // Store base price from DB
+                quantity: item.quantity,
+                selectedComponents: validatedComponents, // Store validated components
+                selectedExtras: validatedExtras,       // Store validated extras
+                priceAtOrder: menuItem.price + extrasTotal // Store the calculated price per item including extras
             });
-            calculatedTotal += menuItem.price * item.quantity;
+
+            // Add to the total calculated amount for the entire order
+            calculatedTotal += itemTotalWithExtras;
         }
 
         console.log(`[${new Date().toISOString()}] Calculated Total: ${calculatedTotal}, Items Validated: ${validatedItems.length}`);
 
         // --- Create and Save Order ---
         const newOrder = new Order({
-            restaurant: restaurantId, // Changed from 'owner' to match schema
-            items: validatedItems,
+            restaurant: restaurantId,
+            items: validatedItems, // Use the validated items array
             tableNumber: parsedTableNumber,
-            totalAmount: calculatedTotal, // Use server-calculated total
+            totalAmount: calculatedTotal, // Use the server-calculated total including extras
             status: 'new', // Start as 'new'
             orderType: orderType, // Set based on tableNumber presence
             customerInfo: {
                 name: customerName ? customerName.trim() : undefined,
                 phone: customerPhone ? customerPhone.trim() : undefined,
-                email: customerEmail ? customerEmail.trim().toLowerCase() : undefined, // Add email
-                address: customerAddress ? customerAddress.trim() : undefined // Add address (for future delivery)
+                email: customerEmail ? customerEmail.trim().toLowerCase() : undefined,
+                address: customerAddress ? customerAddress.trim() : undefined
             },
-            notes: notes ? notes.trim() : undefined, // Use 'notes' from destructuring
+            notes: notes ? notes.trim() : undefined,
         });
 
         console.log(`[${new Date().toISOString()}] Attempting to save order for Restaurant ID: ${restaurantId}`);

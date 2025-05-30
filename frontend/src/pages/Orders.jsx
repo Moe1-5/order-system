@@ -8,7 +8,7 @@ import {
     FiClock, FiCheckCircle, FiLoader, FiAlertCircle, FiXCircle, FiPackage,
     FiCalendar, FiDollarSign, FiUser, FiHash, FiPhone, FiMapPin,
     FiTruck, FiShoppingBag, FiBell, FiX, FiRotateCw, FiInbox,
-    FiMail, FiEdit3
+    FiMail, FiEdit3, FiTag, FiPlus
 } from 'react-icons/fi'; // Ensure ALL needed icons are imported
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";

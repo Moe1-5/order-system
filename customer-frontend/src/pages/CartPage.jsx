@@ -9,6 +9,7 @@ import {
     FiUser, FiPhone, FiMail, FiEdit3, FiTag // Added FiTag for customizations
 } from 'react-icons/fi';
 import LoadingSpinner from '../components/LoadingSpinner';
+import customerApi from '../api/customerApi';
 
 // Axios instance specifically for customer public API calls
 

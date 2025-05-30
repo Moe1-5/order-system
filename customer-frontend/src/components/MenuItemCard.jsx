@@ -4,7 +4,7 @@ import { FiImage, FiPlusCircle, FiAlertTriangle, FiTag } from 'react-icons/fi';
 // import { useCart } from '../context/CartContext'; // We'll handle add to cart via modal
 import MenuItemModal from './MenuItemModal'; // Import the new modal
 
-const MenuItemCard = ({ item, restaurantId, tableNumber }) => {
+const MenuItemCard = ({ item, restaurantId, tableNumber, onAddToCart }) => {
     // const { addItem } = useCart(); // We won't use addItem directly here anymore
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -89,7 +89,7 @@ const MenuItemCard = ({ item, restaurantId, tableNumber }) => {
                 item={item}
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
-            // onAddToCart will be handled within MenuItemModal using CartContext
+                onAddToCart={onAddToCart} // Pass the onAddToCart prop down to the modal
             />
         </>
     );

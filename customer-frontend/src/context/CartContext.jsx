@@ -24,12 +24,15 @@ export const CartProvider = ({ children }) => {
     const generateCartItemId = (menuItem, selectedComponents, selectedExtras) => {
         const componentsKey = [...(selectedComponents || [])].sort().join(',');
         const extrasKey = [...(selectedExtras || [])].map(ex => ex.name).sort().join(',');
-        return `${menuItem._id}-${componentsKey}-${extrasKey}`;
+        // Ensure menuItem._id is accessible
+        return `${menuItem?._id}-${componentsKey}-${extrasKey}`;
     };
 
-    const addItem = (itemWithOptions) => { // itemWithOptions includes menuItem, quantity, selectedComponents, selectedExtras, finalPricePerItem
+    const addItem = (itemWithOptions) => { // itemWithOptions includes all item properties, quantity, selectedComponents, selectedExtras, finalPricePerItem
         setCartItems(prevItems => {
-            const { menuItem, quantity, selectedComponents, selectedExtras, finalPricePerItem } = itemWithOptions;
+            // Destructure quantity and customization details, and rest into menuItem
+            const { quantity, selectedComponents, selectedExtras, finalPricePerItem, ...menuItem } = itemWithOptions;
+
             const cartItemId = generateCartItemId(menuItem, selectedComponents, selectedExtras);
 
             const existingItem = prevItems.find(item => item.cartId === cartItemId);
@@ -43,7 +46,7 @@ export const CartProvider = ({ children }) => {
             } else {
                 return [...prevItems, {
                     cartId: cartItemId, // Unique ID for this specific configuration in the cart
-                    menuItem: menuItem, // The base menu item object
+                    menuItem: menuItem, // The base menu item object (now correctly nested)
                     quantity: quantity,
                     selectedComponents: selectedComponents || [],
                     selectedExtras: selectedExtras || [],
@@ -73,6 +76,7 @@ export const CartProvider = ({ children }) => {
 
     const subtotal = useMemo(() => {
         return cartItems.reduce((total, item) => {
+            // Access pricePerItemWithExtras from the item object
             return total + (item.pricePerItemWithExtras * item.quantity);
         }, 0);
     }, [cartItems]);

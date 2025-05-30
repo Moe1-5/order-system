@@ -187,6 +187,7 @@ const Menu = () => {
                                         item={item}
                                         restaurantId={restaurantId}
                                         tableNumber={tableNumber}
+                                        onAddToCart={addItem}
                                     // Pass the addItem function from CartContext to be used by the modal
                                     // The modal will be rendered by MenuItemCard
                                     // onAddToCart will be called by MenuItemModal
