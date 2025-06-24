@@ -1,4 +1,3 @@
-// src/pages/MenuPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 // Removed axios import if not used directly here
@@ -34,15 +33,17 @@ const Menu = () => {
             setIsLoading(true);
             setError(null);
             try {
+                console.log("this is the url:", customerApi.baseURL)
                 const [menuResponse, infoResponse] = await Promise.all([
                     customerApi.get(`/menu/${restaurantId}`),
+
                     customerApi.get(`/siteinfo/${restaurantId}`)
                 ]);
+
                 setMenuItems(Array.isArray(menuResponse.data) ? menuResponse.data : []);
                 setRestaurantInfo(infoResponse.data || null);
             } catch (err) {
-                // ... (existing error handling) ...
-                console.error("Error fetching menu/info:", err.response?.data || err.message, err);
+                console.log("Error fetching menu/info:", err.response?.data || err.message, err);
                 let specificError = err.response?.data?.message || "Could not load restaurant details or menu.";
                 if (err.response?.status === 404) {
                     setError(`Oops! We couldn't find the restaurant or menu. Maybe check the link or QR code?`);

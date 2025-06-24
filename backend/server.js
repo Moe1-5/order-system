@@ -6,72 +6,66 @@ import mongoose from "mongoose";
 import multer from 'multer';
 import http from 'http';
 import { Server } from 'socket.io';
-// Stripe isn't typically needed directly here unless you have logic outside controllers
 
-dotenv.config(); // Load .env variables ASAP
+
+dotenv.config();
 
 // --- Route Imports ---
 import publicRoutes from './routes/publicRoutes.js';
 import menuRoutes from './routes/menuRoutes.js';
-import authRoutes from "./routes/authRoute.js"; // Your file with register, login, me, subscription-status
+import authRoutes from "./routes/authRoute.js";
 import siteInfoRoutes from "./routes/siteInfoRoutes.js";
 import qrCodeRoutes from "./routes/qrCodeRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
-import billingRoutes from './routes/billingRoutes.js'; // Your file with checkout, portal, webhook routes
+import billingRoutes from './routes/billingRoutes.js';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.DATABASE_URL; // Make sure this matches your .env key name
+const PORT = process.env.PORT || 3000;
+const HOST = "0.0.0.0";
+const MONGO_URI = process.env.DATABASE_URL;
 
 if (!MONGO_URI) {
     console.error("FATAL ERROR: DATABASE_URL (MONGO_URI) is not defined in environment variables.");
     process.exit(1);
 }
 
-// --- CORS Setup ---
-const allowedOrigins = [
-    process.env.CLIENT_URL, // Your Customer Frontend URL from .env
-    process.env.ADMIN_URL,  // Your Admin Frontend URL from .env
-    // Add production URLs here later, e.g., 'https://www.yourdomain.com', 'https://admin.yourdomain.com'
-].filter(Boolean); // Filters out undefined if ADMIN_URL or CLIENT_URL are not set in .env
 
-if (allowedOrigins.length === 0) {
-    console.warn("WARNING: No CLIENT_URL or ADMIN_URL found in .env - CORS might block frontend requests.");
-} else {
-    console.log("Allowed CORS origins:", allowedOrigins);
-}
+const allowedOrigins = [
+    process.env.CUSTOMER_APP_URL,
+    process.env.ADMIN_URL,
+
+].filter(Boolean);
 
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps, curl, Postman) OR if origin is in the allowed list
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             console.warn(`CORS blocked for origin: ${origin}`);
-            callback(new Error(`Origin ${origin} not allowed by CORS`)); // More specific error
+            callback(new Error(`Origin ${origin} not allowed by CORS`));
         }
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // Important if your frontend needs to send cookies or authorization headers
-    optionsSuccessStatus: 204 // For pre-flight requests
+    credentials: true,
+    optionsSuccessStatus: 204
 };
 app.use(cors(corsOptions));
 
-// --- Create HTTP Server & Socket.IO (Needed for Socket.IO) ---
+
 const httpServer = http.createServer(app);
 const io = new Server(httpServer, {
     cors: {
-        origin: allowedOrigins, // Use same origins for Socket.IO
+        origin: allowedOrigins,
         methods: ["GET", "POST"]
     }
 });
 // Your Socket.IO connection logic
 io.on('connection', (socket) => {
     console.log(`[Socket.IO Server] User connected: ${socket.id}`);
-    // ... (rest of your socket logic: join_restaurant_room, disconnect, error) ...
+
     socket.on('join_restaurant_room', (restaurantId) => {
         console.log(`[Socket.IO Server] Received 'join_restaurant_room' from ${socket.id} for Restaurant ID: ${restaurantId}`);
         if (restaurantId && typeof restaurantId === 'string') {
@@ -143,7 +137,6 @@ app.get('/', (req, res) => {
     res.status(200).type('text/plain').send("ScanPlate Backend API Running!");
 });
 
-// --- Not Found Handler (Optional but good practice) ---
 app.use((req, res, next) => {
     res.status(404).json({ error: `Not Found - Cannot ${req.method} ${req.originalUrl}` });
 });
@@ -171,18 +164,16 @@ app.use((err, req, res, next) => {
 });
 
 // --- DB Connection & Server Start ---
-mongoose.connect(MONGO_URI)
+mongoose.connect(MONGO_URI) // KEEP THIS - VERY IMPORTANT FOR TESTING THE CRASH
     .then(() => {
-        console.log("MongoDB Connected!");
-        // Start listening on the httpServer instance for Socket.IO compatibility
-        httpServer.listen(PORT, () => {
-            console.log(`Server (with Socket.IO) running on http://localhost:${PORT}`);
+        console.log("MongoDB Connected! (Minimal Test)");
+        httpServer.listen(PORT, '0.0.0.0', () => { // Ensure 0.0.0.0 for listening
+            console.log(`Minimal Server (with Socket.IO base) running on port ${PORT}, listening on 0.0.0.0`);
         });
     })
     .catch((err) => {
-        console.error("!!! MongoDB Connection Error:", err.message); // Log only message initially
-        // console.error(err); // Log full error if needed
-        process.exit(1); // Exit if database connection fails on startup
+        console.error("!!! MongoDB Connection Error (Minimal Test):", err.message);
+        process.exit(1);
     });
 
-export { io }; // Export Socket.IO instance if needed by other modules
+export { io }; 

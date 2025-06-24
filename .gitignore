@@ -1,13 +1,5 @@
-# Ignore all node_modules folders recursively
-**/node_modules
-node_modules
-
-# Ignore env files in all folders
-**/.env
-.env
-
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -15,18 +7,36 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Build folders
-dist
-dist-ssr
+# Dependency directories
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+**/dist/
+**/build/
+
+# Environment and local config
+.env
+*.env
 *.local
 
 # Editor directories and files
-.vscode/*
+.vscode/
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# Docker and deployment-related files
+**/.dockerignore
+**/Dockerfile
+**/fly.toml
+**/nginx.conf

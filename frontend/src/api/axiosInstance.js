@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!API_BASE_URL) {
+    console.error("FATAL ERROR: VITE_API_BASE_URL is not defined in environment variables. Ensure it's set in your .env files.");
+}
+
+
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5000/api', // Replace with your backend URL
+    baseURL: API_BASE_URL, // Replace with your backend URL
     // withCredentials: true, // Needed if using cookies for authentication
 });
 

@@ -16,10 +16,10 @@ const getTargetUrl = (type, tableNumber, ownerId) => {
     // 2. Validate Base URL
     if (!baseUrl) {
         console.warn("!!! CRITICAL WARNING: CUSTOMER_APP_URL environment variable is not set! QR Codes will not point to the correct customer application. Using placeholder: 'http://localhost:3000'. Please set this variable in your .env file.");
-        baseUrl = 'http://localhost:3000'; // Sensible fallback for local development
+        baseUrl = "http://localhost:3000"; // Sensible fallback for local development
     } else {
         if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
-            baseUrl = `http://${baseUrl}`; // Prepend http:// if missing
+            baseUrl = `${baseUrl}`; // Prepend http:// if missing
         }
         baseUrl = baseUrl.replace(/\/$/, ""); // Remove trailing slash
     }

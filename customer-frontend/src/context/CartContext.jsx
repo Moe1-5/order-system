@@ -1,4 +1,3 @@
-// src/context/CartContext.js
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 
 const CartContext = createContext();
@@ -20,7 +19,7 @@ export const CartProvider = ({ children }) => {
         localStorage.setItem('scanPlateCart', JSON.stringify(cartItems));
     }, [cartItems]);
 
-    // Helper to generate a unique ID for a cart item based on its customizations
+    // Helper to generate vbomizations
     const generateCartItemId = (menuItem, selectedComponents, selectedExtras) => {
         const componentsKey = [...(selectedComponents || [])].sort().join(',');
         const extrasKey = [...(selectedExtras || [])].map(ex => ex.name).sort().join(',');

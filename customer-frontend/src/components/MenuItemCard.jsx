@@ -82,9 +82,6 @@ const MenuItemCard = ({ item, restaurantId, tableNumber, onAddToCart }) => {
                     )}
                 </div>
             </article>
-
-            {/* Modal - Rendered here, controlled by this card's state */}
-            {/* The onAddToCart in MenuItemModal will call useCart().addItem */}
             <MenuItemModal
                 item={item}
                 isOpen={isModalOpen}

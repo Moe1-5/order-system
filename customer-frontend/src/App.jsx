@@ -1,7 +1,7 @@
 // src/App.jsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom'; // Import Link & useLocation
-import MenuPage from './pages/Menu';
+import Menu from './pages/Menu';
 import CartPage from './pages/CartPage'; // Import CartPage
 import NotFoundPage from './pages/NotFoundPage';
 import './index.css';
@@ -18,9 +18,9 @@ function App() {
 
         <Routes>
           {/* Menu Routes */}
-          <Route path="/order/table/:tableNumber" element={<MenuPage />} />
-          <Route path="/order/general" element={<MenuPage />} />
-          <Route path="/menu" element={<MenuPage />} />
+          <Route path="/order/table/:tableNumber" element={<Menu />} />
+          <Route path="/order/general" element={<Menu />} />
+          <Route path="/menu" element={<Menu />} />
 
           {/* Cart Route - Potentially needs tableNumber too if applicable */}
           <Route path="/cart/table/:tableNumber" element={<CartPage />} /> {/* Cart for specific table */}

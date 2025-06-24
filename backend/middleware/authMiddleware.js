@@ -7,9 +7,8 @@ dotenv.config();
 
 const protect = async (req, res, next) => {
     let token;
-    console.log(`\n--- Protect Middleware Triggered for: ${req.method} ${req.originalUrl} ---`); // Log which request
-    console.log('Authorization Header:', req.headers.authorization || 'Not Present'); // Log header
-
+    // console.log(`\n--- Protect Middleware Triggered for: ${req.method} ${req.originalUrl} ---`); // Log which request
+    // console.log('Authorization Header:', req.headers.authorization || 'Not Present'); // Log header
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             // Get token from header
