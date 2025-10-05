@@ -44,3 +44,4 @@ Thumbs.db
 *.env
 *.env.*
 .env.compose
+docker-compose.local.yml
