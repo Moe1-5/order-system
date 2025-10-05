@@ -1,0 +1,15 @@
+/.git
+/node_modules
+.dockerignore
+.env
+Dockerfile
+fly.toml
+
+node_modules
+dist
+build
+.git
+.gitignore
+.env*
+*.local
+.DS_Store
