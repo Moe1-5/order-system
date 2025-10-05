@@ -16,6 +16,8 @@ const OrderCart = ({ cartItems, onUpdateQuantity, onPlaceOrder, isPlacingOrder, 
         return null;
     }
 
+    console.log("this is in the OrderCart cartItems : ", cartItems)
+
     // Use restaurant name from info object
     const restaurantName = restaurantInfo?.name || 'the restaurant';
 

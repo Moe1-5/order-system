@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [dev, main, master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Backend: install & run tests/lint if you have them
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+        working-directory: backend
+      - run: npm test --if-present
+        working-directory: backend
+      - run: npm run lint --if-present
+        working-directory: backend
+
+      # Sanity build of Docker images (no push)
+      - name: Build Docker images
+        run: |
+          docker build -t backend:ci ./backend
+          docker build -t admin:ci ./frontend
+          docker build -t customer:ci ./customer-frontend

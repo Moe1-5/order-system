@@ -155,31 +155,21 @@ export const registerUser = async (req, res) => {
         res.status(500).json({ message: "Server error during registration." });
     }
 };
-
-// User Login (Updated with Validation Check and Subscription Check)
+// User Login (Temporary: allow login if subscription inactive unless explicitly enforced)
 export const loginUser = async (req, res) => {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
 
-    // Use sanitized data
     const { email, phone, password, rememberMe } = req.body;
 
     try {
-        // Determine login identifier based on sanitized data
-        let identifier = {};
-        if (email) {
-            identifier = { mail: email };
-        } else if (phone) { // Only check phone if email wasn't provided
-            identifier = { phone: phone };
-        }
-        // We already validated that one of them must exist
+        // Determine login identifier
+        const identifier = email ? { mail: email } : { phone };
 
-        // Find user AND include subscriptionStatus
-        const user = await User.findOne(identifier).select('+password +subscriptionStatus'); // Explicitly select password and status
-
+        // Just fetch password for verification, no subscriptionStatus
+        const user = await User.findOne(identifier).select('+password');
         if (!user) {
             return res.status(401).json({ message: "Invalid credentials." });
         }
@@ -190,53 +180,30 @@ export const loginUser = async (req, res) => {
             return res.status(401).json({ message: "Invalid credentials." });
         }
 
-        // --- Subscription Status Check ---
-        // Define inactive statuses. Modify this array as needed.
-        // `null` means never subscribed or status cleared.
-        // 'canceled', 'incomplete', 'unpaid', 'past_due' are also inactive states.
-        const inactiveStatuses = [null, 'canceled', 'incomplete', 'unpaid', 'past_due'];
-
-        if (inactiveStatuses.includes(user.subscriptionStatus)) {
-            console.log(`User ${user._id} login attempt with inactive subscription status: ${user.subscriptionStatus}`);
-            // Login is successful, but subscription is inactive.
-            // Do NOT generate tokens. Signal frontend to redirect.
-            return res.status(200).json({
-                needsSubscription: true, // <<< Signal flag for frontend
-                message: `Login successful, but an active subscription is required. Please subscribe or manage your billing.`,
-                user: {
-                    id: user._id,
-                    restaurantName: user.restaurantName,
-                    userName: user.userName,
-                    mail: user.mail,
-                    subscriptionStatus: user.subscriptionStatus // Send status for context
-                }
-                // NO accessToken or refreshToken
-            });
-        }
-        // --- End Subscription Status Check ---
-
-        // If subscription is active ('active' or 'trialing'), generate tokens
-        console.log(`User ${user._id} login successful with active subscription status: ${user.subscriptionStatus}`);
+        // Always issue tokens (ignoring subscription)
         const { accessToken, refreshToken } = generateTokens(user._id, rememberMe);
 
-        res.status(200).json({
+        console.log(`User ${user._id} login successful (subscription ignored for now)`);
+
+        return res.status(200).json({
             message: "Login successful!",
             user: {
                 id: user._id,
                 restaurantName: user.restaurantName,
                 userName: user.userName,
-                mail: user.mail,
-                subscriptionStatus: user.subscriptionStatus // Send status
+                mail: user.mail
+                // subscriptionStatus intentionally omitted
             },
             accessToken,
-            ...(refreshToken && { refreshToken }) // Conditionally include refreshToken
+            ...(refreshToken && { refreshToken })
         });
 
     } catch (error) {
-        console.error('Login Error:', error);
-        res.status(500).json({ message: "Server error during login." });
+        console.error("Login Error:", error);
+        return res.status(500).json({ message: "Server error during login." });
     }
 };
+
 
 // getUserProfile - No changes needed here, assuming 'protect' middleware selects needed fields
 export const getUserProfile = async (req, res) => {

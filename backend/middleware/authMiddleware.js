@@ -6,6 +6,32 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const protect = async (req, res, next) => {
+
+    if (process.env.NODE_ENV === 'development') {
+        console.log("auth pypass (DEV MODE)")
+        try {
+            const devUser = await User.findOne({ email: "test_dev@test.com" }).select('-password');
+
+            if (!devUser) {
+                console.log('Dev user is not found grapping first user from DB..')
+                const firstUser = await User.findOne().select('-password');
+                if (!firstUser) throw new Error("No users found in the dataabse developement bypass. ")
+                req.user = firstUser;
+            } else {
+                req.user = devUser;
+            }
+
+            console.log(`logged in as a devUser : ${req.user.userName || req.user.email}`)
+            req.userId = req.user._id;
+            return next();
+
+        } catch (error) {
+            console.error("Dev Bypass Failed :", error.message);
+            return res.status(500).json({ message: "Development auth bypass failed. Make sure you have users in your DB.", error: error.message })
+        }
+    }
+
+
     let token;
     // console.log(`\n--- Protect Middleware Triggered for: ${req.method} ${req.originalUrl} ---`); // Log which request
     // console.log('Authorization Header:', req.headers.authorization || 'Not Present'); // Log header
@@ -76,6 +102,7 @@ const protect = async (req, res, next) => {
     if (!token) {
         return res.status(401).json({ message: 'Not authorized, no token (final check)' });
     }
+
 };
 
 export default protect;

@@ -195,7 +195,7 @@ function Register() {
 
                         setSubmitSuccess(true); // Set success state for message display
                         setTimeout(() => {
-                            navigate('/billing'); // Redirect after delay
+                            navigate('/login'); // Redirect after delay
                         }, 1500);
 
                     } else {

@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  api:
+    image: ghcr.io/moe1-5/order-system/backend:prod
+    env_file: /opt/scanplate/.env
+    ports: ["5000:3000"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  admin:
+    image: ghcr.io/moe1-5/order-system/frontend:prod
+    ports: ["81:80"]
+    restart: unless-stopped
+
+  customer:
+    image: ghcr.io/moe1-5/order-system/customer-frontend:prod
+    ports: ["80:80"]
+    restart: unless-stopped

@@ -76,7 +76,7 @@ export const CartProvider = ({ children }) => {
     const subtotal = useMemo(() => {
         return cartItems.reduce((total, item) => {
             // Access pricePerItemWithExtras from the item object
-            return total + (item.pricePerItemWithExtras * item.quantity);
+            return total + (item.menuItem.pricePerItemWithExtras * item.quantity);
         }, 0);
     }, [cartItems]);
 

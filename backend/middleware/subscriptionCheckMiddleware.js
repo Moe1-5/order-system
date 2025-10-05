@@ -3,6 +3,7 @@ import User from '../models/user.js'; // Adjust path if needed
 
 const requireActiveSubscription = async (req, res, next) => {
     // This middleware should run AFTER the 'protect' middleware
+    return next();
     if (!req.user?._id) {
         // Should have been caught by 'protect', but good safety check
         return res.status(401).json({ message: 'Authentication required.' });

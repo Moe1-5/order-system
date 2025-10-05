@@ -11,7 +11,7 @@ import Menu from './pages/Menu';
 import QrGenerator from './pages/QrGenerator';
 import SiteInfo from './pages/SiteInfo';
 import Settings from './pages/Settings';
-import BillingPage from './pages/Billing';
+// import BillingPage from './pages/Billing';
 // Import the protected route component
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -20,6 +20,9 @@ import AdminLayout from './components/AdminLayout'; // Adjust path if necessary
 
 // --- IMPORT NotFound component ---
 import NotFound from './pages/NotFound'; // Adjust path if necessary
+import RestrictedRegister from './pages/RestrictedRegister';
+
+
 
 function App() {
   return (
@@ -27,7 +30,7 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/Admin-register" element={<RestrictedRegister />} />
 
         {/* Protected Routes - Wrap with ProtectedRoute */}
         <Route element={<ProtectedRoute />}>
@@ -35,23 +38,20 @@ function App() {
           <Route element={<AdminLayout />}>
             {/* These routes will render inside AdminLayout's <Outlet /> */}
             <Route path="/dashboard" element={<MainDashboard />} />
-            <Route path="/billing" element={<BillingPage />} />
+            {/* <Route path="/billing" element={<BillingPage />} /> */}
             <Route path="/orders" element={<Orders />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/qr-settings" element={<QrGenerator />} />
             <Route path="/site-info" element={<SiteInfo />} />
             <Route path="/settings" element={<Settings />} />
-            {/* Add other protected routes here */}
 
             {/* Optional: Redirect root path to dashboard if logged in */}
-            {/* Make sure this is also within a layout if needed, or adjust */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
-          {/* --- END AdminLayout WRAPPER --- */}
+
         </Route>
 
         {/* Fallback Route for Not Found (404) */}
-        {/* This route will match any path not matched above */}
         <Route path="*" element={<NotFound />} />
 
       </Routes>

@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  api:
+    image: ghcr.io/moe1-5/order-system/backend:dev
+    env_file: /opt/scanplate/.env.dev
+    # your backend container listens on 3000 (from your Dockerfile), map it out as 5000 on host
+    ports: ["5000:3000"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]  # add a /health route if you don't have one yet
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  admin:
+    image: ghcr.io/moe1-5/order-system/frontend:dev
+    # admin React built → nginx 80
+    ports: ["8081:80"]
+    restart: unless-stopped
+
+  customer:
+    image: ghcr.io/moe1-5/order-system/customer-frontend:dev
+    ports: ["8080:80"]
+    restart: unless-stopped

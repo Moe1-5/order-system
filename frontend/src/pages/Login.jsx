@@ -122,7 +122,7 @@ function Login() {
                     // Optionally display a message briefly, or just redirect immediately.
                     // Consider passing user info if needed by billing page (e.g., via state)
                     // For now, just redirect:
-                    navigate('/billing', { replace: true }); // Redirect to your billing page route
+                    navigate('/dashboard', { replace: true }); // Redirect to your billing page route
                     // Note: Since we redirect, setIsSubmitting(false) in finally might not run visibly, but that's okay.
 
                 }
@@ -462,16 +462,6 @@ function Login() {
                             </div>
                         </form>
                     </div>
-                </div>
-
-                {/* Register Link */}
-                <div className="text-center">
-                    <p className="text-sm text-gray-600">
-                        Don't have an account?{' '}
-                        <a href="/register" className="font-medium text-orange-600 hover:text-orange-500 transition duration-150">
-                            Register your restaurant
-                        </a>
-                    </p>
                 </div>
             </div>
         </div>

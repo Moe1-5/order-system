@@ -22,9 +22,9 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import billingRoutes from './routes/billingRoutes.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 const HOST = "0.0.0.0";
-const MONGO_URI = process.env.DATABASE_URL;
+const MONGO_URI = process.env.MONGO_URI;
 
 if (!MONGO_URI) {
     console.error("FATAL ERROR: DATABASE_URL (MONGO_URI) is not defined in environment variables.");
@@ -33,8 +33,11 @@ if (!MONGO_URI) {
 
 
 const allowedOrigins = [
+    'http://localhost:8080', // customer
+    'http://localhost:8081',
     process.env.CUSTOMER_APP_URL,
     process.env.ADMIN_URL,
+    process.env.LOCAL_ADMIN_URL,
 
 ].filter(Boolean);
 
@@ -89,40 +92,56 @@ io.on('connection', (socket) => {
 // 1. Special Raw Body Parser *ONLY* for the Stripe Webhook Endpoint
 //    The path must EXACTLY match where Stripe will POST to.
 //    This MUST come BEFORE express.json()
-app.post('/api/payments/stripe-webhooks', express.raw({ type: 'application/json' }), (req, res, next) => {
-    console.log(`Webhook request received, raw body attached for path: ${req.path}`);
-    // The actual logic is in the billingRoutes handler, this just prepares the body.
-    next();
-});
+
+// app.post('/api/payments/stripe-webhooks', express.raw({ type: 'application/json' }), (req, res, next) => {
+//     console.log(`Webhook request received, raw body attached for path: ${req.path}`);
+//     // The actual logic is in the billingRoutes handler, this just prepares the body.
+//     next();
+// });
+
 
 // 2. Standard Body Parsers for all OTHER routes
 app.use(express.json({ limit: '10mb' })); // For parsing application/json
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); // For parsing application/x-www-form-urlencoded
 
 // 3. Request Logger Middleware (Optional, good for debugging)
-app.use((req, res, next) => {
-    // Don't log the raw buffer for webhooks in detail
-    if (req.path === '/api/payments/stripe-webhooks') {
-        console.log(`${req.method} ${req.path} (Webhook Event)`);
-    } else {
-        console.log(`${req.method} ${req.path}`);
-        if (req.body && Object.keys(req.body).length > 0) {
-            // console.log('Request Body:', req.body); // Be careful logging sensitive data
-        }
-    }
-    next();
-});
+// app.use((req, res, next) => {
+//     // Don't log the raw buffer for webhooks in detail
+//     if (req.path === '/api/payments/stripe-webhooks') {
+//         console.log(`${req.method} ${req.path} (Webhook Event)`);
+//     } else {
+//         console.log(`${req.method} ${req.path}`);
+//         if (req.body && Object.keys(req.body).length > 0) {
+//             // console.log('Request Body:', req.body); // Be careful logging sensitive data
+//         }
+//     }
+//     next();
+// });
 
 // --- API Routes ---
 // Note on ordering: If routes have potential overlap or rely on specific middleware, order matters.
 // Generally, place more specific routes before more general ones if prefixes overlap.
 
 // Mount billing-specific routes (checkout, portal, webhook handler)
-app.use('/api/payments', billingRoutes);
+// app.use('/api/payments', billingRoutes);
+
+
+app.post('/api/admin-access', (req, res) => {
+    const { username, password } = req.body;
+
+    const ADMIN_USERNAME = process.env.ADMIN_ACCESS_USERNAME;
+    const ADMIN_PASSWORD = process.env.ADMIN_ACCESS_PASSWORD;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+        return res.status(200).json({ accessGranted: true });
+    } else {
+        return res.status(401).json({ accessGranted: false, message: 'Invalid credentials' });
+    }
+});
+
 
 // Mount authentication & user status routes (register, login, me, subscription-status)
 app.use('/api/auth', authRoutes); // <<< CORRECTED PREFIX: Use this single prefix for clarity
-
 // Mount other routes
 app.use('/api/public', publicRoutes);
 app.use('/api', menuRoutes);      // Uses /api/menu internally? Prefix /api is okay.

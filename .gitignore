@@ -40,3 +40,7 @@ Thumbs.db
 **/Dockerfile
 **/fly.toml
 **/nginx.conf
+
+*.env
+*.env.*
+.env.compose

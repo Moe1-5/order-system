@@ -1,0 +1,11 @@
+# I am the only code owner — I review all PRs
+
+- @Moe1-5
+
+# Optional: assign ownership per folder
+
+backend/** @Moe1-5
+frontend/** @Moe1-5
+customer-frontend/** @Moe1-5
+deploy/** @Moe1-5
+.github/workflows/\*\* @Moe1-5

@@ -156,7 +156,7 @@ const MainDashboard = () => {
             <header className="bg-white shadow-sm sticky top-0 z-10">
                 <div className="max-w-7xl mx-auto">
                     <div className="flex justify-between items-center py-3 px-4 sm:px-6 lg:px-8">
-                        <Link to="/Main" className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800">
+                        <Link to="/dashboard" className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-800">
                             <FiHome className="h-6 w-6" />
                             <Link to="/#" className="flex items-center text-indigo-600 hover:text-indigo-800"><span className="font-bold text-lg sm:inline">ScanPlate</span ></Link>
                         </Link>

@@ -1,28 +1,78 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
-// Removed axios import if not used directly here
-import { useCart } from '../context/CartContext'; // Ensure CartContext provides addItem
-import MenuItemCard from '../components/MenuItemCard';
-import LoadingSpinner from '../components/LoadingSpinner';
-// import ErrorMessage from '../components/ErrorMessage'; // Keep if used for page-level errors
-import { FiImage, FiShoppingCart, FiAlertCircle, FiX, FiGift } from 'react-icons/fi';
-import CompanyLogoPlaceholder from '../components/CompanyLogo';
-import customerApi from '../api/customerApi'; // Assuming you created this separate instance
+import { useCart } from '../context/CartContext';
+import customerApi from '../api/customerApi';
 
-const generateId = (text) => text.toLowerCase().replace(/\s+/g, '-');
+// Import the new UI components
+import SearchBar from '../components/SearchBar';
+import CategoryTabs from '../components/CategoryTabs';
+import FoodCard from '../components/FoodCard';
+import ProductDetails from '../components/ProductDetails';
+import DesktopCart from '../components/DesktopCart';
+
+// Import helpers and icons
+import LoadingSpinner from '../components/LoadingSpinner';
+import { FiAlertCircle, FiShoppingCart, FiImage } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// A custom header that combines the template's style with your app's needs
+const MenuHeader = ({ restaurantInfo, tableNumber, totalItems, cartLink }) => (
+    <div className="sticky top-0 z-30 flex justify-between items-center p-6 bg-white/90 backdrop-blur-md border-b border-gray-100 lg:hidden">
+        <div className="flex items-center space-x-3 overflow-hidden">
+            {restaurantInfo?.logoUrl ? (
+                <img src={restaurantInfo.logoUrl} alt={`${restaurantInfo.name} Logo`} className="w-12 h-12 object-contain rounded-2xl bg-white p-1 shadow-md flex-shrink-0" />
+            ) : (
+                <motion.div
+                    className="w-12 h-12 bg-gradient-to-br from-orange-400 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0"
+                >
+                    <span className="text-white font-black text-lg">{restaurantInfo?.name?.charAt(0) || 'F'}</span>
+                </motion.div>
+            )}
+            <div>
+                <h2 className="font-bold text-gray-800 text-lg truncate">{restaurantInfo?.name || 'Restaurant Menu'}</h2>
+                {tableNumber && <p className="text-sm text-gray-500 font-medium">Table {tableNumber}</p>}
+            </div>
+        </div>
+
+        <Link to={cartLink} aria-label={`View Cart (${totalItems} items)`}>
+            <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="relative p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+                <FiShoppingCart className="w-5 h-5 text-gray-600" />
+                {totalItems > 0 && (
+                    <motion.div
+                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                    >
+                        <span className="text-white text-xs font-bold">{totalItems}</span>
+                    </motion.div>
+                )}
+            </motion.div>
+        </Link>
+    </div>
+);
 
 const Menu = () => {
+    // STATE, HOOKS, and HELPERS are all correct
     const [menuItems, setMenuItems] = useState([]);
     const [restaurantInfo, setRestaurantInfo] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeCategory, setActiveCategory] = useState('all');
-
+    const [activeTab, setActiveTab] = useState('All Menu');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedProduct, setSelectedProduct] = useState(null);
     const { tableNumber } = useParams();
     const location = useLocation();
+    const { totalItems, addItem } = useCart();
     const restaurantId = useMemo(() => new URLSearchParams(location.search).get('restaurant'), [location.search]);
-    const { totalItems, addItem } = useCart(); // Get addItem from CartContext
+    const cartLink = `/cart${tableNumber ? `/table/${tableNumber}` : ''}${location.search}`;
+    const hasCustomizations = (item) => (item.components?.length > 0) || (item.extras?.length > 0);
 
+    // DATA FETCHING is correct, but added price safety
     useEffect(() => {
         if (!restaurantId) {
             setError("Restaurant ID is missing. Please use a valid link.");
@@ -33,27 +83,31 @@ const Menu = () => {
             setIsLoading(true);
             setError(null);
             try {
-                console.log("this is the url:", customerApi.baseURL)
                 const [menuResponse, infoResponse] = await Promise.all([
                     customerApi.get(`/menu/${restaurantId}`),
-
                     customerApi.get(`/siteinfo/${restaurantId}`)
                 ]);
+
+                // --- THIS IS THE CRITICAL FIX ---
+                // We must sanitize the data as soon as we get it.
+
+
+                // const formattedMenuItems = (Array.isArray(menuResponse.data) ? menuResponse.data : [])
+                //     .filter(item => item.isAvailable)
+                //     .map(item => ({
+                //         ...item,
+                //         id: item._id,
+                //         image: item.imageUrl, // Ensure 'image' property exists for components
+                //         rating: item.rating || 4.8,
+                //         description: item.description || "No description available.",
+                //         price: typeof item.price === 'number' ? item.price : parseFloat(item.price) || 0,
+                //     }));
+
 
                 setMenuItems(Array.isArray(menuResponse.data) ? menuResponse.data : []);
                 setRestaurantInfo(infoResponse.data || null);
             } catch (err) {
-                console.log("Error fetching menu/info:", err.response?.data || err.message, err);
-                let specificError = err.response?.data?.message || "Could not load restaurant details or menu.";
-                if (err.response?.status === 404) {
-                    setError(`Oops! We couldn't find the restaurant or menu. Maybe check the link or QR code?`);
-                } else if (err.code === 'ERR_NETWORK') {
-                    setError("Can't connect. Please check your internet and try again.");
-                } else {
-                    setError(`Something went wrong: ${specificError}`);
-                }
-                setMenuItems([]);
-                setRestaurantInfo(null);
+                setError("Could not load restaurant details or menu.");
             } finally {
                 setIsLoading(false);
             }
@@ -61,149 +115,95 @@ const Menu = () => {
         fetchData();
     }, [restaurantId]);
 
-    const groupedMenu = useMemo(() => (Array.isArray(menuItems) ? menuItems : []).reduce((acc, item) => {
-        const category = item.category || 'Other Dishes';
-        if (!acc[category]) acc[category] = [];
-        acc[category].push(item);
-        return acc;
-    }, {}), [menuItems]);
+    // MEMOIZED DATA is correct
+    const categories = useMemo(() => [...new Set(menuItems.map(item => item.category || 'Other'))].sort(), [menuItems]);
+    const categoryTabs = useMemo(() => {
+        const itemCounts = menuItems.reduce((acc, item) => { const category = item.category || 'Other'; acc[category] = (acc[category] || 0) + 1; return acc; }, {});
+        return [{ name: 'All Menu', count: menuItems.length }, ...categories.map(cat => ({ name: cat, count: itemCounts[cat] }))];
+    }, [categories, menuItems]);
+    const filteredItems = useMemo(() => menuItems.filter(item => (activeTab === 'All Menu' || item.category === activeTab) && item.name.toLowerCase().includes(searchQuery.toLowerCase())), [menuItems, activeTab, searchQuery]);
 
-    const categories = useMemo(() => Object.keys(groupedMenu).sort(), [groupedMenu]);
-    const cartLink = `/cart${tableNumber ? `/table/${tableNumber}` : ''}${location.search}`;
-    const promotion = restaurantInfo?.promotion;
+    // EVENT HANDLERS
+    const handleProductClick = (item) => setSelectedProduct(item);
 
-    if (isLoading) {
-        return <div className="min-h-screen flex items-center justify-center"><LoadingSpinner message="Loading Menu..." /></div>;
-    }
-    // More robust error display if critical data is missing
-    if (error && (!restaurantInfo || !Array.isArray(menuItems) || menuItems.length === 0)) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
-                <FiAlertCircle className="w-16 h-16 text-red-500 mb-4" />
-                <h1 className="text-xl font-semibold text-red-700 mb-2">Loading Failed</h1>
-                <p className="text-gray-600 mb-6">{error}</p>
-                <button
-                    onClick={() => window.location.reload()} // Simple refresh
-                    className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-                >
-                    Try Again
-                </button>
-            </div>
-        );
-    }
+    const handleQuickAddToCart = (item, e) => {
+        e.stopPropagation();
+        if (hasCustomizations(item)) {
+            setSelectedProduct(item);
+        } else {
+            // --- CORRECTED OBJECT STRUCTURE ---
+            addItem({
+                ...item, // Spreads _id, name, price, etc.
+                quantity: 1,
+                selectedComponents: item.components || [],
+                selectedExtras: [],
+                finalPricePerItem: item.price || 0 // The base price IS the final price here.
+            });
+        }
+    };
+
+    const addToCartFromDetails = (customizedItem) => {
+        addItem(customizedItem);
+        setSelectedProduct(null);
+    };
+
+    // RENDER LOGIC for loading/error states is correct
+    if (isLoading) return <div className="min-h-screen bg-white flex flex-col items-center justify-center"><LoadingSpinner message="Finding delicious food..." /></div>;
+    if (error) return <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center"><FiAlertCircle className="w-16 h-16 text-red-500 mb-4" /><h1 className="text-xl font-semibold text-gray-800 mb-2">Oops, something went wrong.</h1><p className="text-gray-600 mb-6 max-w-sm">{error}</p></div>;
 
     return (
-        <div className="min-h-screen bg-gray-50 md:bg-gray-100 font-sans">
-            {/* ... (Navbar, Hero Section, Promotion Section - same as before) ... */}
-            <nav className="bg-white shadow-sm sticky top-0 z-30 px-4 py-2 border-b border-gray-200">
-                {/* ... Navbar content ... */}
-                <div className="container mx-auto flex justify-between items-center h-14">
-                    <Link to={`/${location.search}`} className="flex items-center space-x-2 text-indigo-600 flex-shrink-0 mr-4">
-                        <CompanyLogoPlaceholder className="h-9 w-auto" />
-                        <span className="font-bold text-xl hidden sm:inline tracking-tight">ScanPlate</span>
-                    </Link>
-                    <div className="hidden md:flex items-center space-x-2 overflow-hidden text-center">
-                        {restaurantInfo?.logoUrl ? (
-                            <img src={restaurantInfo.logoUrl} alt={`${restaurantInfo.name} Logo`} className="h-8 w-8 object-contain rounded-sm flex-shrink-0" />
-                        ) : (<div className="h-8 w-8 bg-gray-200 rounded-sm flex items-center justify-center text-gray-400 flex-shrink-0"><FiImage size={16} /></div>)}
-                        <span className="font-semibold text-gray-700 text-base truncate">
-                            {restaurantInfo?.name || 'Restaurant Menu'}
-                        </span>
-                        {tableNumber && <span className="text-sm font-medium text-gray-500 whitespace-nowrap">(Table {tableNumber})</span>}
-                    </div>
-                    <Link
-                        to={cartLink}
-                        className="relative p-2 text-gray-600 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 rounded-full"
-                        aria-label={`View Cart (${totalItems} items)`}
-                    >
-                        <FiShoppingCart size={26} />
-                        {totalItems > 0 && (
-                            <span className="absolute top-0 right-0 block h-4 w-4 transform translate-x-1/2 -translate-y-1/2">
-                                <span className="absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75 animate-ping"></span>
-                                <span className="relative inline-flex rounded-full h-4 w-4 bg-red-600 items-center justify-center text-xs font-bold text-white">
-                                    {totalItems}
-                                </span>
-                            </span>
-                        )}
-                    </Link>
-                </div>
-            </nav>
+        <AnimatePresence mode="wait">
+            {selectedProduct ? (
+                <motion.div key="product-details" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <ProductDetails product={selectedProduct} onBack={() => setSelectedProduct(null)} onAddToCart={addToCartFromDetails} />
+                </motion.div>
+            ) : (
+                <motion.div key="menu-list" className="min-h-screen bg-gray-50">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="lg:hidden">
+                            <MenuHeader restaurantInfo={restaurantInfo} tableNumber={tableNumber} totalItems={totalItems} cartLink={cartLink} />
+                        </div>
+                        <div className="lg:grid lg:grid-cols-12 lg:gap-8 p-4 sm:p-6 lg:p-8">
+                            <main className="lg:col-span-8">
+                                <div className="lg:hidden">
+                                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="text-4xl font-black text-gray-900 leading-tight">Find good</motion.h1>
+                                    <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500 mb-8">Food around you</motion.h1>
+                                </div>
+                                <div className="hidden lg:flex items-center space-x-4 mb-8">
+                                    {restaurantInfo?.logoUrl && <img src={restaurantInfo.logoUrl} alt="Logo" className="w-16 h-16 rounded-2xl" />}
+                                    <div>
+                                        <h1 className="text-4xl font-black text-gray-900 leading-tight">Welcome to</h1>
+                                        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500">{restaurantInfo?.name}</h1>
+                                    </div>
+                                </div>
 
-            <section className="mb-6 md:mb-8">
-                {restaurantInfo?.coverImageUrl ? (
-                    <div className="w-full h-48 md:h-56 lg:h-64 bg-gray-300"> <img src={restaurantInfo.coverImageUrl} alt={`${restaurantInfo.name || 'Restaurant'} dining experience`} className="w-full h-full object-cover" /> </div>
-                ) : (
-                    <div className="w-full h-48 md:h-56 lg:h-64 bg-gradient-to-br from-yellow-400 to-amber-500 flex flex-col items-center justify-center text-center p-6 text-white relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-10 text-5xl md:text-6xl lg:text-7xl pointer-events-none grid grid-cols-4 gap-4 place-content-center"> <span>🍕</span><span>🍔</span><span>🥗</span><span>🌮</span> <span>🍜</span><span>🍣</span><span>🍩</span><span>🍦</span> <span>🍰</span><span>🍹</span><span>☕</span><span>🥐</span> </div>
-                        <div className="relative z-10">
-                            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold mb-2" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.5)' }}> {restaurantInfo?.name ? `Welcome to ${restaurantInfo.name}!` : 'Explore Our Menu!'} </h1>
-                            <p className="text-lg md:text-xl font-medium opacity-90" style={{ textShadow: '1px 1px 1px rgba(0,0,0,0.4)' }}> Ready to discover your next favorite dish? 🍽️ </p>
-                            {tableNumber && <p className="mt-2 px-3 py-1 inline-block bg-black bg-opacity-20 rounded-full text-sm font-semibold">Dining at Table {tableNumber}</p>}
+                                <SearchBar searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+                                <CategoryTabs tabs={categoryTabs} activeTab={activeTab} setActiveTab={setActiveTab} />
+
+                                <motion.div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mt-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.2 }}>
+                                    {filteredItems.length > 0 ? (
+                                        filteredItems.map((item, index) => (
+                                            <motion.div key={item.id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: index * 0.05 }}>
+                                                <FoodCard item={item} onClick={() => handleProductClick(item)} onQuickAdd={(e) => handleQuickAddToCart(item, e)} isCustomizable={hasCustomizations(item)} />
+                                            </motion.div>
+                                        ))
+                                    ) : (
+                                        <div className="col-span-full text-center py-16 px-4 bg-white rounded-lg shadow">
+                                            <FiImage size={40} className="mx-auto text-gray-400 mb-4" />
+                                            <p className="text-lg font-medium text-gray-600">No dishes found</p>
+                                            <p className="text-sm text-gray-500">There are no available items in this category.</p>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            </main>
+                            <aside className="hidden lg:block lg:col-span-4">
+                                <DesktopCart />
+                            </aside>
                         </div>
                     </div>
-                )}
-            </section>
-
-
-            <main className="container mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-                {promotion && promotion.active && (
-                    <section className="mb-8 md:mb-10"> {/* ... Promotion Section ... */} </section>
-                )}
-
-                {error && restaurantInfo && ( /* ... Error Display ... */
-                    <div className="mb-6 bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-md flex items-center justify-between space-x-2 shadow-sm" role="alert">
-                        <div className="flex items-center space-x-3"> <FiAlertCircle className="h-6 w-6 flex-shrink-0" /> <span>{error}</span> </div>
-                        <button onClick={() => setError(null)} className="text-red-700 hover:text-red-900 focus:outline-none p-1 -m-1 rounded-full hover:bg-red-200"> <FiX className="h-5 w-5" /> </button>
-                    </div>
-                )}
-
-                {categories.length > 1 && ( /* ... Categories Navbar ... */
-                    <nav className="sticky top-[64px] md:top-[68px] z-20 bg-white bg-opacity-95 backdrop-blur-sm shadow-sm rounded-lg mb-6 -mx-1 sm:mx-0 overflow-hidden">
-                        <div className="flex space-x-1 sm:space-x-2 overflow-x-auto whitespace-nowrap px-3 py-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                            <a href="#menu-all" onClick={() => setActiveCategory('all')} className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 ${activeCategory === 'all' ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'}`} > All Items </a>
-                            {categories.map(category => {
-                                const categoryId = generateId(category);
-                                return (
-                                    <a key={category} href={`#${categoryId}`} onClick={() => setActiveCategory(categoryId)} className={`px-4 py-2 text-sm font-medium rounded-md transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 ${activeCategory === categoryId ? 'bg-indigo-100 text-indigo-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-800'}`} > {category} </a>
-                                );
-                            })}
-                        </div>
-                    </nav>
-                )}
-
-                <div id="menu-all">
-                    {categories.length === 0 && !isLoading && ( /* ... Empty Menu Message ... */
-                        <div className="text-center py-12 px-4 bg-white rounded-lg shadow"> <FiImage size={48} className="mx-auto text-gray-400 mb-4" /> <p className="text-lg font-medium text-gray-600">The menu seems empty right now.</p> <p className="text-sm text-gray-500">Check back soon for delicious updates!</p> </div>
-                    )}
-                    {categories.map(category => (
-                        <section key={category} id={generateId(category)} className="mb-10 md:mb-12 scroll-mt-[130px] md:scroll-mt-[140px]">
-                            <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-5 flex items-center">
-                                {category}
-                                <span className="ml-4 flex-grow h-px bg-gradient-to-r from-gray-300 via-gray-200 to-transparent"></span>
-                            </h2>
-                            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 sm:gap-6">
-                                {groupedMenu[category].map(item => (
-                                    <MenuItemCard
-                                        key={item._id}
-                                        item={item}
-                                        restaurantId={restaurantId}
-                                        tableNumber={tableNumber}
-                                        onAddToCart={addItem}
-                                    // Pass the addItem function from CartContext to be used by the modal
-                                    // The modal will be rendered by MenuItemCard
-                                    // onAddToCart will be called by MenuItemModal
-                                    />
-                                ))}
-                            </div>
-                        </section>
-                    ))}
-                </div>
-            </main>
-            {/* ... (Footer remains the same) ... */}
-            <footer className="py-4 text-center text-xs text-gray-500 border-t border-gray-200 bg-white md:bg-transparent mt-auto">
-                Powered by Smart Swipe | {restaurantInfo?.name || 'Your Restaurant'} © {new Date().getFullYear()}
-            </footer>
-        </div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };
 

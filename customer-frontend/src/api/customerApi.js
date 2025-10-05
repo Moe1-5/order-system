@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = "https://backend-lively-field-8013.fly.dev/api/public";
+const API_BASE_URL = "http://localhost:5000/api/public";
 
 
 const customerApi = axios.create({

@@ -1,0 +1,48 @@
+name: Build Docker images (GHCR)
+
+on:
+  push:
+    branches: [dev, master]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN || github.token }}
+
+      - name: Build & tag
+        run: |
+          SHA="${GITHUB_SHA::7}"
+          # dev or prod tag based on branch
+          if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then TAG="dev"; else TAG="prod"; fi
+
+          docker build -t ghcr.io/moe1-5/order-system/backend:${TAG} -t ghcr.io/moe1-5/order-system/backend:${SHA} ./backend
+          docker build -t ghcr.io/moe1-5/order-system/frontend:${TAG} -t ghcr.io/moe1-5/order-system/frontend:${SHA} ./frontend
+          docker build -t ghcr.io/moe1-5/order-system/customer-frontend:${TAG} -t ghcr.io/moe1-5/order-system/customer-frontend:${SHA} ./customer-frontend
+
+      - name: Push
+        run: |
+          docker push ghcr.io/moe1-5/order-system/backend:${GITHUB_SHA::7}
+          docker push ghcr.io/moe1-5/order-system/frontend:${GITHUB_SHA::7}
+          docker push ghcr.io/moe1-5/order-system/customer-frontend:${GITHUB_SHA::7}
+
+          if [[ "${GITHUB_REF_NAME}" == "dev" ]]; then
+            docker push ghcr.io/moe1-5/order-system/backend:dev
+            docker push ghcr.io/moe1-5/order-system/frontend:dev
+            docker push ghcr.io/moe1-5/order-system/customer-frontend:dev
+          else
+            docker push ghcr.io/moe1-5/order-system/backend:prod
+            docker push ghcr.io/moe1-5/order-system/frontend:prod
+            docker push ghcr.io/moe1-5/order-system/customer-frontend:prod
+          fi

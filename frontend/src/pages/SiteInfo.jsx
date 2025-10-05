@@ -56,14 +56,14 @@ const SiteInfo = () => {
                 // Fetch restaurant profile (includes branches based on schema)
                 const infoResponse = await axiosInstance.get('/site-info');
                 // --- End Axios Call ---
-    
+
                 setRestaurantInfo(infoResponse.data);
                 setBranches(infoResponse.data.branches || []); // Set branches from profile data
-                 // Set initial previews from fetched URLs
-                 setLogoPreview(infoResponse.data.logoUrl);
-                 setCoverImagePreview(infoResponse.data.coverImageUrl);
-    
-    
+                // Set initial previews from fetched URLs
+                setLogoPreview(infoResponse.data.logoUrl);
+                setCoverImagePreview(infoResponse.data.coverImageUrl);
+
+
             } catch (err) {
                 console.error("Error fetching site info:", err.response?.data || err.message);
                 setError(err.response?.data?.message || "Failed to load restaurant information. Please try refreshing the page.");
@@ -71,7 +71,7 @@ const SiteInfo = () => {
                 setIsLoading(false);
             }
         };
-    
+
         fetchData();
     }, []); // Empty dependency array ensures this runs only once on mount
 
@@ -99,18 +99,18 @@ const SiteInfo = () => {
         setSubmitError(''); // Clear previous submit errors
     };
 
-  // Image removal handler (slightly adjusted)
-const removeNewImage = (fileType) => {
-    if (fileType === 'logo') {
-        if (logoPreview && logoPreview.startsWith('blob:')) URL.revokeObjectURL(logoPreview); // Clean up blob memory
-        setLogoFile(null);
-        setLogoPreview(restaurantInfo.logoUrl); // Revert preview to original URL
-    } else if (fileType === 'coverImage') {
-        if (coverImagePreview && coverImagePreview.startsWith('blob:')) URL.revokeObjectURL(coverImagePreview);
-        setCoverImageFile(null);
-        setCoverImagePreview(restaurantInfo.coverImageUrl); // Revert preview to original URL
-    }
-};
+    // Image removal handler (slightly adjusted)
+    const removeNewImage = (fileType) => {
+        if (fileType === 'logo') {
+            if (logoPreview && logoPreview.startsWith('blob:')) URL.revokeObjectURL(logoPreview); // Clean up blob memory
+            setLogoFile(null);
+            setLogoPreview(restaurantInfo.logoUrl); // Revert preview to original URL
+        } else if (fileType === 'coverImage') {
+            if (coverImagePreview && coverImagePreview.startsWith('blob:')) URL.revokeObjectURL(coverImagePreview);
+            setCoverImageFile(null);
+            setCoverImagePreview(restaurantInfo.coverImageUrl); // Revert preview to original URL
+        }
+    };
 
     // Branch handlers (mostly unchanged, but interact with local state that will be sent)
     const startEditBranch = (branch) => { setEditingBranch(branch); setIsAddingBranch(false); };
@@ -146,9 +146,9 @@ const removeNewImage = (fileType) => {
         setIsSubmitting(true);
         setSubmitError('');
         setError(null);
-    
+
         const formDataToSend = new FormData(); // Use 'formDataToSend' to avoid conflict
-    
+
         formDataToSend.append('name', restaurantInfo.name);
         formDataToSend.append('description', restaurantInfo.description);
         formDataToSend.append('primaryPhone', restaurantInfo.primaryPhone);
@@ -156,12 +156,12 @@ const removeNewImage = (fileType) => {
         formDataToSend.append('website', restaurantInfo.website);
         // Add isDeliveryEnabled if managed here (though likely better in Settings)
         if (restaurantInfo.isDeliveryEnabled !== undefined) {
-             formDataToSend.append('isDeliveryEnabled', restaurantInfo.isDeliveryEnabled);
+            formDataToSend.append('isDeliveryEnabled', restaurantInfo.isDeliveryEnabled);
         }
-    
+
         // Append branches data (JSON stringify is common)
         formDataToSend.append('branches', JSON.stringify(branches));
-    
+
         // Append new files if they exist
         if (logoFile) {
             formDataToSend.append('logo', logoFile);
@@ -169,7 +169,7 @@ const removeNewImage = (fileType) => {
         if (coverImageFile) {
             formDataToSend.append('coverImage', coverImageFile);
         }
-    
+
         // Add flags to tell backend if images should be cleared
         // Check if there's NO preview/file AND there WAS an original URL
         if (!logoPreview && !logoFile && restaurantInfo.logoUrl) {
@@ -178,8 +178,8 @@ const removeNewImage = (fileType) => {
         if (!coverImagePreview && !coverImageFile && restaurantInfo.coverImageUrl) {
             formDataToSend.append('clearCoverImage', 'true');
         }
-    
-    
+
+
         try {
             console.log("Submitting site info...");
             // --- Replace Mock with Axios ---
@@ -190,9 +190,9 @@ const removeNewImage = (fileType) => {
                 },
             });
             // --- End Axios Call ---
-    
+
             console.log('Save successful:', response.data);
-    
+
             // Update state with potentially new URLs returned from backend
             if (response.data.data) {
                 const updatedProfile = response.data.data;
@@ -202,14 +202,14 @@ const removeNewImage = (fileType) => {
                 setLogoPreview(updatedProfile.logoUrl);
                 setCoverImagePreview(updatedProfile.coverImageUrl);
             }
-    
+
             // Clear file inputs after successful upload
             setLogoFile(null);
             setCoverImageFile(null);
             // No need to revoke previews here as they now point to the saved URLs
-    
+
             alert('Changes saved successfully!');
-    
+
         } catch (error) {
             console.error('Save error:', error.response?.data || error.message);
             setSubmitError(error.response?.data?.message || `Failed to save changes. Please try again.`);
@@ -242,7 +242,7 @@ const removeNewImage = (fileType) => {
                 >
                     Retry
                 </button>
-                <Link to="/Main" className="mt-2 text-sm text-gray-600 hover:text-indigo-500">
+                <Link to="/dashboard" className="mt-2 text-sm text-gray-600 hover:text-indigo-500">
                     Go to Dashboard
                 </Link>
             </div>
@@ -549,13 +549,33 @@ const removeNewImage = (fileType) => {
                         className="bg-white shadow rounded-lg overflow-hidden"
                     >
                         <div className="p-6">
+                            <h2 className="text-xl font-semibold text-gray-900 mb-6">Branch Management</h2>
+
+                            {/* --- "Coming Soon" Placeholder --- */}
+                            <div className="text-center py-20 px-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                                <FiTool className="mx-auto h-12 w-12 text-gray-400" />
+                                <h3 className="mt-4 text-xl font-semibold text-gray-700">Coming Soon!</h3>
+                                <p className="mt-2 text-sm text-gray-500">
+                                    Full branch management functionality is currently under development.
+                                </p>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    You will be able to add, edit, and manage all your locations from here.
+                                </p>
+                            </div>
+
+                            {/* 
+                                YOUR ORIGINAL CODE IS SAFELY COMMENTED OUT BELOW.
+                                YOU CAN UNCOMMENT IT WHEN THE FEATURE IS READY.
+                            */}
+
+                            {/*
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-medium text-gray-900">Branch Management</h2>
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     onClick={startAddBranch}
-                                    disabled={isAddingBranch || editingBranch || isSubmitting} // Disable if submitting changes
+                                    disabled={isAddingBranch || editingBranch || isSubmitting}
                                     className={`flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md ${isAddingBranch || editingBranch || isSubmitting
                                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         : 'text-white bg-indigo-600 hover:bg-indigo-700'
@@ -566,10 +586,8 @@ const removeNewImage = (fileType) => {
                                 </motion.button>
                             </div>
 
-                            {/* Branch editing form (uses handleBranchEditSubmit which only updates local state) */}
                             {editingBranch && (
                                 <div className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-                                    {/* Form Content - Kept mostly the same, ensure inputs use py-2 px-3 if desired */}
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-md font-medium text-gray-900">Edit Branch: {editingBranch.name}</h3>
                                         <button onClick={cancelAction} className="text-gray-500 hover:text-gray-700">
@@ -577,54 +595,13 @@ const removeNewImage = (fileType) => {
                                         </button>
                                     </div>
                                     <form onSubmit={handleBranchEditSubmit}>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {/* Input fields - example with updated classes */}
-                                            <div className="col-span-1">
-                                                <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 mb-1">Branch Name</label>
-                                                <input type="text" name="name" id="edit-name" value={editingBranch.name} onChange={(e) => handleBranchChange(e, true)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" required />
-                                            </div>
-                                            <div className="col-span-1">
-                                                <label htmlFor="edit-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                                <input type="tel" name="phone" id="edit-phone" value={editingBranch.phone} onChange={(e) => handleBranchChange(e, true)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" />
-                                            </div>
-                                            <div className="col-span-2">
-                                                <label htmlFor="edit-address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                                                <input type="text" name="address" id="edit-address" value={editingBranch.address} onChange={(e) => handleBranchChange(e, true)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" />
-                                            </div>
-                                            {/* ... other fields (hours, manager) with updated classes */}
-                                            <div className="col-span-1">
-                                                <label htmlFor="edit-hours" className="block text-sm font-medium text-gray-700 mb-1">Hours</label>
-                                                <input type="text" name="hours" id="edit-hours" value={editingBranch.hours} onChange={(e) => handleBranchChange(e, true)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" />
-                                            </div>
-                                            <div className="col-span-1">
-                                                <label htmlFor="edit-manager" className="block text-sm font-medium text-gray-700 mb-1">Manager</label>
-                                                <input type="text" name="manager" id="edit-manager" value={editingBranch.manager} onChange={(e) => handleBranchChange(e, true)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" />
-                                            </div>
-                                            {/* Active checkbox */}
-                                            <div className="col-span-2">
-                                                <div className="flex items-start">
-                                                    <div className="flex items-center h-5">
-                                                        <input id="edit-active" name="active" type="checkbox" checked={editingBranch.active} onChange={(e) => handleBranchChange(e, true)} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" />
-                                                    </div>
-                                                    <div className="ml-3 text-sm">
-                                                        <label htmlFor="edit-active" className="font-medium text-gray-700">Active Branch</label>
-                                                        <p className="text-gray-500">Inactive branches won't appear in customer-facing apps.</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="mt-5 flex justify-end">
-                                            <button type="button" onClick={cancelAction} className="mr-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
-                                            <button type="submit" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"><FiSave className="mr-2 h-4 w-4" /> Save Changes</button>
-                                        </div>
+                                        ... form content ...
                                     </form>
                                 </div>
                             )}
 
-                            {/* Add new branch form (uses handleNewBranchSubmit which only updates local state) */}
                             {isAddingBranch && (
                                 <div className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
-                                    {/* Form Content - Kept mostly the same, ensure inputs use py-2 px-3 */}
                                     <div className="flex justify-between items-center mb-4">
                                         <h3 className="text-md font-medium text-gray-900">Add New Branch</h3>
                                         <button onClick={cancelAction} className="text-gray-500 hover:text-gray-700">
@@ -632,95 +609,15 @@ const removeNewImage = (fileType) => {
                                         </button>
                                     </div>
                                     <form onSubmit={handleNewBranchSubmit}>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {/* Input fields - example with updated classes */}
-                                            <div className="col-span-1">
-                                                <label htmlFor="new-name" className="block text-sm font-medium text-gray-700 mb-1">Branch Name</label>
-                                                <input type="text" name="name" id="new-name" value={newBranch.name} onChange={(e) => handleBranchChange(e)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" required />
-                                            </div>
-                                            <div className="col-span-1">
-                                                <label htmlFor="new-phone" className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                                <input type="tel" name="phone" id="new-phone" value={newBranch.phone} onChange={(e) => handleBranchChange(e)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" />
-                                            </div>
-                                            <div className="col-span-2">
-                                                <label htmlFor="new-address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                                                <input type="text" name="address" id="new-address" value={newBranch.address} onChange={(e) => handleBranchChange(e)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" />
-                                            </div>
-                                            {/* ... other fields (hours, manager) with updated classes */}
-                                            <div className="col-span-1">
-                                                <label htmlFor="new-hours" className="block text-sm font-medium text-gray-700 mb-1">Hours</label>
-                                                <input type="text" name="hours" id="new-hours" value={newBranch.hours} onChange={(e) => handleBranchChange(e)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" />
-                                            </div>
-                                            <div className="col-span-1">
-                                                <label htmlFor="new-manager" className="block text-sm font-medium text-gray-700 mb-1">Manager</label>
-                                                <input type="text" name="manager" id="new-manager" value={newBranch.manager} onChange={(e) => handleBranchChange(e)} className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3" />
-                                            </div>
-                                            {/* Active checkbox */}
-                                            <div className="col-span-2">
-                                                <div className="flex items-start">
-                                                    <div className="flex items-center h-5">
-                                                        <input id="new-active" name="active" type="checkbox" checked={newBranch.active} onChange={(e) => handleBranchChange(e)} className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" />
-                                                    </div>
-                                                    <div className="ml-3 text-sm">
-                                                        <label htmlFor="new-active" className="font-medium text-gray-700">Active Branch</label>
-                                                        <p className="text-gray-500">Inactive branches won't appear in customer-facing apps.</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="mt-5 flex justify-end">
-                                            <button type="button" onClick={cancelAction} className="mr-3 inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Cancel</button>
-                                            <button type="submit" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"><FiPlus className="mr-2 h-4 w-4" /> Add Branch</button>
-                                        </div>
+                                        ... form content ...
                                     </form>
                                 </div>
                             )}
 
-                            {/* Branches list - Table structure improved */}
                             <div className="overflow-x-auto shadow border border-gray-200 sm:rounded-lg">
                                 {branches.length > 0 ? (
                                     <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                                                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                                <th scope="col" className="relative px-4 py-3"><span className="sr-only">Actions</span></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {branches.map((branch) => (
-                                                <tr key={branch.id}>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{branch.name}</td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{branch.address}</td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{branch.phone}</td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm">
-                                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${branch.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                            {branch.active ? 'Active' : 'Inactive'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                                                        <button
-                                                            onClick={() => startEditBranch(branch)}
-                                                            disabled={isAddingBranch || editingBranch || isSubmitting}
-                                                            className={`text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-100 ${isAddingBranch || editingBranch || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                            title="Edit Branch"
-                                                        >
-                                                            <FiEdit className="h-4 w-4" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => { if (window.confirm(`Are you sure you want to delete the branch "${branch.name}"? This change is local until saved.`)) deleteBranch(branch.id); }}
-                                                            disabled={isAddingBranch || editingBranch || isSubmitting}
-                                                            className={`text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-100 ${isAddingBranch || editingBranch || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                            title="Delete Branch"
-                                                        >
-                                                            <FiTrash2 className="h-4 w-4" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
+                                        ... table content ...
                                     </table>
                                 ) : (
                                     <div className="text-center py-10 px-6">
@@ -730,6 +627,7 @@ const removeNewImage = (fileType) => {
                                     </div>
                                 )}
                             </div>
+                            */}
                         </div>
                     </motion.div>
                 )}

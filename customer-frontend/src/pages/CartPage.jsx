@@ -1,17 +1,12 @@
-// src/pages/CartPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios'; // Keep for customerApi definition
 import {
     FiShoppingCart, FiTrash2, FiMinusCircle, FiPlusCircle, FiLoader,
     FiArrowLeft, FiAlertCircle, FiCheckCircle, FiImage, FiX,
-    FiUser, FiPhone, FiMail, FiEdit3, FiTag // Added FiTag for customizations
+    FiUser, FiPhone, FiMail, FiEdit3
 } from 'react-icons/fi';
-import LoadingSpinner from '../components/LoadingSpinner';
 import customerApi from '../api/customerApi';
-
-// Axios instance specifically for customer public API calls
 
 const CartPage = () => {
     const {
@@ -61,7 +56,6 @@ const CartPage = () => {
             return;
         }
         if (cartItems.length === 0 || isPlacingOrder || !restaurantId) {
-            console.warn("Order placement blocked:", { isEmpty: cartItems.length === 0, isPlacing: isPlacingOrder, noId: !restaurantId });
             return;
         }
 
@@ -74,12 +68,12 @@ const CartPage = () => {
                 menuItemId: cartEntry.menuItem._id,
                 name: cartEntry.menuItem.name,
                 quantity: cartEntry.quantity,
-                priceAtOrder: cartEntry.pricePerItemWithExtras,
+                priceAtOrder: cartEntry.pricePerItemWithExtras || 0, // Safety check
                 selectedComponents: cartEntry.selectedComponents,
-                selectedExtras: cartEntry.selectedExtras.map(ex => ({ name: ex.name, price: ex.price }))
+                selectedExtras: cartEntry.selectedExtras?.map(ex => ({ name: ex.name, price: ex.price || 0 })) || []
             })),
             tableNumber: isTableOrder ? parseInt(tableNumber, 10) : undefined,
-            totalAmount: subtotal,
+            totalAmount: subtotal || 0,
             customerName: customerName.trim() || undefined,
             customerPhone: customerPhone.trim() || undefined,
             customerEmail: customerEmail.trim().toLowerCase() || undefined,
@@ -89,7 +83,7 @@ const CartPage = () => {
         try {
             const response = await customerApi.post('/orders', orderData);
             setOrderSuccess({
-                orderId: response.data._id || response.data.orderId || 'N/A', // Use _id from response if available
+                orderId: response.data._id || response.data.orderId || 'N/A',
                 orderNumber: response.data.orderNumber || 'Unknown'
             });
             clearCart();
@@ -100,7 +94,6 @@ const CartPage = () => {
                 if (customerEmail.trim()) localStorage.setItem('customerEmail', customerEmail.trim()); else localStorage.removeItem('customerEmail');
             }
         } catch (err) {
-            console.error("Error placing order:", err.response?.data || err.message, err);
             let specificError = "Failed to place order. Please try again.";
             if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
                 specificError = err.response.data.errors.map(e => e.message || e.msg).join(' ');
@@ -117,7 +110,7 @@ const CartPage = () => {
 
     if (orderSuccess) {
         const menuLinkPath = tableNumber ? `/menu/table/${tableNumber}` : '/menu';
-        const menuLink = `${menuLinkPath}${location.search}`; // Keep restaurant query param
+        const menuLink = `${menuLinkPath}${location.search}`;
 
         return (
             <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-green-50">
@@ -145,7 +138,7 @@ const CartPage = () => {
             <header className="bg-white shadow-sm p-4 sticky top-0 z-30">
                 <div className="max-w-3xl mx-auto flex items-center">
                     <button
-                        onClick={() => navigate(`/menu${tableNumber ? `/table/${tableNumber}` : ''}${location.search}`)} // Navigate back to menu with params
+                        onClick={() => navigate(`/menu${tableNumber ? `/table/${tableNumber}` : ''}${location.search}`)}
                         className="text-gray-600 hover:text-indigo-600 mr-4 p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         aria-label="Go back to menu"
                     >
@@ -196,7 +189,7 @@ const CartPage = () => {
                                     <li key={cartId} className="flex items-start py-4 px-4 sm:px-6 gap-3 sm:gap-4">
                                         <div className="h-20 w-20 bg-gray-100 rounded flex-shrink-0 flex items-center justify-center text-gray-400 overflow-hidden">
                                             {menuItem.imageUrl ? (
-                                                <img src={menuItem.imageUrl} alt={menuItem.name} className="h-full w-full object-cover rounded" />
+                                                <img src={menuItem.image || menuItem.imageUrl} alt={menuItem.name} className="h-full w-full object-cover rounded" />
                                             ) : (
                                                 <FiImage size={32} />
                                             )}
@@ -205,29 +198,27 @@ const CartPage = () => {
                                             <div className="flex justify-between items-start">
                                                 <div>
                                                     <p className="text-sm font-semibold text-gray-900">{menuItem.name}</p>
-                                                    <p className="text-xs text-gray-500">${pricePerItemWithExtras.toFixed(2)} ea.</p>
+                                                    <p className="text-xs text-gray-500">${(menuItem.pricePerItemWithExtras || 0).toFixed(2)} ea.</p>
                                                 </div>
                                                 <span className="text-sm font-semibold text-gray-800 flex-shrink-0 ml-2">
-                                                    ${(pricePerItemWithExtras * quantity).toFixed(2)}
+                                                    ${((menuItem.pricePerItemWithExtras || 0) * quantity).toFixed(2)}
                                                 </span>
                                             </div>
 
-                                            {/* Display Customizations */}
-                                            {(selectedComponents.length < defaultComponents.length || (selectedExtras && selectedExtras.length > 0)) && (
+                                            {(selectedComponents?.length < defaultComponents.length || (selectedExtras && selectedExtras.length > 0)) && (
                                                 <div className="mt-1.5 text-xs text-gray-600 space-y-0.5">
                                                     {defaultComponents.map(comp => {
-                                                        if (!selectedComponents.includes(comp)) {
+                                                        if (!selectedComponents?.includes(comp)) {
                                                             return <p key={`no-${comp}`} className="italic flex items-center"><FiX className="inline mr-1 text-red-500 h-3 w-3" />No {comp}</p>;
                                                         }
                                                         return null;
                                                     })}
-                                                    {selectedExtras && selectedExtras.map(extra => (
-                                                        <p key={extra.name} className="italic flex items-center"><FiPlusCircle className="inline mr-1 text-green-500 h-3 w-3" />{extra.name} (+${extra.price.toFixed(2)})</p>
+                                                    {selectedExtras?.map(extra => (
+                                                        <p key={extra.name} className="italic flex items-center"><FiPlusCircle className="inline mr-1 text-green-500 h-3 w-3" />{extra.name} (+${(extra.price || 0).toFixed(2)})</p>
                                                     ))}
                                                 </div>
                                             )}
 
-                                            {/* Quantity Controls & Remove Button */}
                                             <div className="flex items-center justify-between mt-2">
                                                 <div className="flex items-center">
                                                     <button onClick={() => updateQuantity(cartId, -1)} title="Decrease" className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 rounded-full hover:bg-red-100" disabled={isPlacingOrder}> <FiMinusCircle className="w-5 h-5" /> </button>
@@ -279,7 +270,7 @@ const CartPage = () => {
                         <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
                             <div className="flex justify-between items-center mb-4 text-lg">
                                 <span className="font-medium text-gray-800">Subtotal:</span>
-                                <span className="font-bold text-gray-900">${subtotal.toFixed(2)}</span>
+                                <span className="font-bold text-gray-900">${(subtotal || 0).toFixed(2)}</span>
                             </div>
                             <button onClick={handlePlaceOrder} disabled={isPlacingOrder || cartItems.length === 0 || !restaurantId} className={`w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors duration-150 ${isPlacingOrder || cartItems.length === 0 || !restaurantId ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'}`}>
                                 {isPlacingOrder ? (<> <FiLoader className="animate-spin h-5 w-5 mr-2" /> Placing Order... </>) : (`Place Order (${totalItems} Item${totalItems !== 1 ? 's' : ''})`)}
