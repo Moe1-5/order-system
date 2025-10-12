@@ -36,6 +36,5 @@ Thumbs.db
 *.sw?
 
 # Docker and deployment-related files
-**/Dockerfile
 **/fly.toml
 **/nginx.conf

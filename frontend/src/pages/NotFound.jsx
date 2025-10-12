@@ -3,7 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiAlertTriangle } from 'react-icons/fi';
 
-const NotFound = () => {
+const NotFoundComponent = () => {
     return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 text-center px-4">
             <FiAlertTriangle className="text-yellow-500 h-16 w-16 mb-4" />
@@ -21,4 +21,6 @@ const NotFound = () => {
     );
 };
 
-export default NotFound;
+
+
+export default NotFoundComponent;
