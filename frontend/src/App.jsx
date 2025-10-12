@@ -19,7 +19,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './components/AdminLayout'; // Adjust path if necessary
 
 // --- IMPORT NotFound component ---
-import NotFound from './pages/NotFound'; // Adjust path if necessary
+import NotFoundComponent from './pages/NotFound'; // Adjust path if necessary
 import RestrictedRegister from './pages/RestrictedRegister';
 
 
@@ -52,7 +52,7 @@ function App() {
         </Route>
 
         {/* Fallback Route for Not Found (404) */}
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<NotFoundComponent />} />
 
       </Routes>
     </Router>
